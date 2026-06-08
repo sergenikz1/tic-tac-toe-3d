@@ -1,0 +1,20 @@
+{
+  "name": "tic-tac-toe-3d",
+  "private": true,
+  "version": "0.1.0",
+  "description": "3D Tic-Tac-Toe (Score Four) Telegram Mini App with online multiplayer",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:core": "npm run build -w @ttt3d/game-core",
+    "test": "npm run test -w @ttt3d/game-core",
+    "dev:server": "npm run dev -w @ttt3d/server",
+    "dev:web": "npm run dev -w @ttt3d/web",
+    "build": "npm run build -w @ttt3d/game-core && npm run build -w @ttt3d/server && npm run build -w @ttt3d/web"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
