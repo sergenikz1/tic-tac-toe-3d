@@ -66,6 +66,28 @@ export function attachSocket(httpServer: HttpServer) {
 
     socket.on('queue:leave', () => matchmaker.remove(user.id));
 
+    socket.on('private:create', (cb) => {
+      if (userRoom.has(user.id)) return;
+      const code = matchmaker.createPrivate({ user, socketId: socket.id });
+      cb(code);
+    });
+
+    socket.on('private:join', (code, cb) => {
+      if (userRoom.has(user.id)) {
+        cb({ ok: false, error: 'Вы уже в игре' });
+        return;
+      }
+      const host = matchmaker.joinPrivate(code, user.id);
+      if (!host) {
+        cb({ ok: false, error: 'Комната не найдена' });
+        return;
+      }
+      cb({ ok: true });
+      startRoom(io, { user, socketId: socket.id }, host);
+    });
+
+    socket.on('private:cancel', () => matchmaker.cancelPrivateByUser(user.id));
+
     socket.on('game:move', (move) => {
       const room = currentRoom(user.id);
       if (!room) return;

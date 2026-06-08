@@ -32,6 +32,9 @@ export function Menu() {
         <button className="btn btn-primary" onClick={joinQueue}>
           🎮 Найти соперника
         </button>
+        <button className="btn" onClick={() => navigate('friend')}>
+          👥 Игра с другом
+        </button>
         <button className="btn" onClick={() => navigate('profile')}>
           👤 Профиль
         </button>

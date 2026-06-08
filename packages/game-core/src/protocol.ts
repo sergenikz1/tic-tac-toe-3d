@@ -39,6 +39,12 @@ export interface GameSnapshot {
   lastMove?: { x: number; y: number; h: number; color: Color };
 }
 
+/** Result of trying to join a private room by code. */
+export interface PrivateJoinResult {
+  ok: boolean;
+  error?: string;
+}
+
 /** Client -> Server events. */
 export interface ClientToServerEvents {
   'queue:join': () => void;
@@ -47,6 +53,12 @@ export interface ClientToServerEvents {
   'game:resign': () => void;
   'game:rematch': () => void;
   'profile:get': (cb: (user: PublicUser) => void) => void;
+  /** Create a private room and receive a short invite code. */
+  'private:create': (cb: (code: string) => void) => void;
+  /** Join a private room by its invite code. */
+  'private:join': (code: string, cb: (res: PrivateJoinResult) => void) => void;
+  /** Cancel a pending private room you created. */
+  'private:cancel': () => void;
 }
 
 /** Server -> Client events. */

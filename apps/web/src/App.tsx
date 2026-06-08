@@ -4,6 +4,7 @@ import { Menu } from './screens/Menu.js';
 import { Matchmaking } from './screens/Matchmaking.js';
 import { Profile } from './screens/Profile.js';
 import { Rules } from './screens/Rules.js';
+import { Friend } from './screens/Friend.js';
 import { Game } from './game/Game.js';
 
 export function App() {
@@ -40,6 +41,8 @@ export function App() {
       return <Profile />;
     case 'rules':
       return <Rules />;
+    case 'friend':
+      return <Friend />;
   }
 }
 

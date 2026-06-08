@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { GameSnapshot, Move, PublicUser } from '@ttt3d/game-core';
 import { authenticate, connectSocket, GameSocket } from './api.js';
-import { haptic } from './tma.js';
+import { haptic, getStartParam } from './tma.js';
 
 export type Screen =
   | 'loading'
@@ -10,7 +10,8 @@ export type Screen =
   | 'matchmaking'
   | 'game'
   | 'profile'
-  | 'rules';
+  | 'rules'
+  | 'friend';
 
 interface AppState {
   screen: Screen;
@@ -20,6 +21,9 @@ interface AppState {
   snapshot: GameSnapshot | null;
   searching: boolean;
   rematchOfferBy: string | null;
+  inviteCode: string | null;
+  privateError: string | null;
+  privateJoining: boolean;
 
   init: () => Promise<void>;
   navigate: (screen: Screen) => void;
@@ -29,6 +33,9 @@ interface AppState {
   resign: () => void;
   rematch: () => void;
   refreshProfile: () => void;
+  createPrivate: () => void;
+  joinPrivate: (code: string) => void;
+  cancelPrivate: () => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -39,6 +46,9 @@ export const useStore = create<AppState>((set, get) => ({
   snapshot: null,
   searching: false,
   rematchOfferBy: null,
+  inviteCode: null,
+  privateError: null,
+  privateJoining: false,
 
   async init() {
     try {
@@ -48,7 +58,15 @@ export const useStore = create<AppState>((set, get) => ({
       socket.on('queue:waiting', () => set({ searching: true }));
       socket.on('match:found', (snapshot) => {
         haptic('medium');
-        set({ snapshot, searching: false, screen: 'game', rematchOfferBy: null });
+        set({
+          snapshot,
+          searching: false,
+          screen: 'game',
+          rematchOfferBy: null,
+          inviteCode: null,
+          privateError: null,
+          privateJoining: false,
+        });
       });
       socket.on('game:update', (snapshot) => {
         const prev = get().snapshot;
@@ -61,6 +79,13 @@ export const useStore = create<AppState>((set, get) => ({
       socket.on('game:error', (message) => console.warn('[game:error]', message));
 
       set({ user, socket, screen: 'menu', authError: null });
+
+      // If opened via an invite deep link, jump straight into that room.
+      const startCode = getStartParam();
+      if (startCode) {
+        set({ screen: 'friend' });
+        get().joinPrivate(startCode);
+      }
     } catch (err) {
       set({ authError: (err as Error).message, screen: 'auth-error' });
     }
@@ -92,5 +117,25 @@ export const useStore = create<AppState>((set, get) => ({
 
   refreshProfile() {
     get().socket?.emit('profile:get', (user) => set({ user }));
+  },
+
+  createPrivate() {
+    set({ screen: 'friend', privateError: null, inviteCode: null });
+    get().socket?.emit('private:create', (code) => set({ inviteCode: code }));
+  },
+
+  joinPrivate(code) {
+    const clean = code.trim().toUpperCase();
+    if (!clean) return;
+    set({ privateJoining: true, privateError: null });
+    get().socket?.emit('private:join', clean, (res) => {
+      // On success, the 'match:found' handler switches to the game screen.
+      if (!res.ok) set({ privateError: res.error ?? 'Не удалось войти', privateJoining: false });
+    });
+  },
+
+  cancelPrivate() {
+    get().socket?.emit('private:cancel');
+    set({ inviteCode: null, privateError: null, privateJoining: false, screen: 'menu' });
   },
 }));
