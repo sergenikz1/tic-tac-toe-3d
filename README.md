@@ -40,9 +40,16 @@ apps/web             Vite + React + react-three-fiber. Меню, профиль,
 2. Настроить окружение: скопировать `.env.example` → `.env` (в корне), задать
    значения. Для локальной игры без Telegram поставьте `DEV_AUTH=1` и
    `VITE_DEV_AUTH=1`.
-3. Инициализировать БД (SQLite по умолчанию):
+3. Поднять PostgreSQL и задать `DATABASE_URL` в `.env` (см. раздел про Dokploy
+   ниже), затем создать таблицы:
    ```bash
-   cd apps/server && npx prisma db push
+   cd apps/server && npx prisma generate && npx prisma db push
+   ```
+   Для локали можно быстро поднять Postgres в Docker:
+   ```bash
+   docker run --name ttt3d-pg -e POSTGRES_PASSWORD=postgres \
+     -e POSTGRES_DB=tictactoe3d -p 5432:5432 -d postgres:18
+   # DATABASE_URL="postgresql://postgres:postgres@localhost:5432/tictactoe3d?schema=public"
    ```
 4. В двух терминалах:
    ```bash
@@ -72,7 +79,24 @@ npm test   # vitest в packages/game-core (проверяет ровно 76 ли
 4. В BotFather: `/newapp` → привязать Mini App к боту и указать URL веб-клиента.
 5. Открыть Mini App из бота — авторизация пройдёт автоматически через Telegram.
 
-## Переключение на Postgres
+## База данных: PostgreSQL через Dokploy
 
-Поменять `provider` в `apps/server/prisma/schema.prisma` на `postgresql` и задать
-`DATABASE_URL` строкой подключения к Postgres, затем `npx prisma db push`.
+Проект использует PostgreSQL (`provider = "postgresql"` в
+`apps/server/prisma/schema.prisma`).
+
+1. В Dokploy создать базу: **Database Name** = `tictactoe3d`, **User** = `postgres`,
+   пароль скопировать, образ `postgres:18`.
+2. Собрать `DATABASE_URL`:
+   `postgresql://postgres:<ПАРОЛЬ>@<ХОСТ>:5432/tictactoe3d?schema=public`
+   - **внутри Dokploy** (сервер рядом с БД): `<ХОСТ>` = App Name базы
+     (напр. `tictactoe3d-tictactoe3d`), порт `5432`;
+   - **снаружи** (миграции со своей машины): включить External-доступ у базы и взять
+     `IP:внешний_порт`, которые показывает Dokploy.
+3. Применить схему: `cd apps/server && npx prisma generate && npx prisma db push`.
+4. Просмотр данных: `npm run prisma:studio` (см. ниже).
+
+## Просмотр базы
+
+```bash
+cd apps/server && npm run prisma:studio   # http://localhost:5555
+```
