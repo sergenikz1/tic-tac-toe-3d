@@ -5,10 +5,20 @@ export const config = {
   webUrl: process.env.WEB_URL ?? 'http://localhost:5173',
   /** Allow logging in with a mock user without Telegram (local dev only). */
   devAuth: process.env.DEV_AUTH === '1',
+  /** Base URL of the Directus instance that stores players and matches. */
+  directusUrl: (process.env.DIRECTUS_URL ?? 'http://localhost:8055').replace(/\/$/, ''),
+  /** Static admin token used by the server to read/write Directus collections. */
+  directusToken: process.env.DIRECTUS_TOKEN ?? '',
 };
 
 if (!config.botToken && !config.devAuth) {
   console.warn(
     '[config] BOT_TOKEN is not set and DEV_AUTH is off. Telegram auth will reject all logins.',
+  );
+}
+
+if (!config.directusToken) {
+  console.warn(
+    '[config] DIRECTUS_TOKEN is not set. The server cannot read/write Directus until it is provided.',
   );
 }

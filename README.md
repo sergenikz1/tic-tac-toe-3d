@@ -10,9 +10,10 @@ Qubic**) в формате Telegram Mini App: вращаемая 3D-модель
 ```
 packages/game-core   Общая логика: доска 4×4×4, генерация 76 выигрышных линий,
                      определение победы, сетевой протокол. Покрыта тестами.
-apps/server          Node + Express + Socket.IO + Prisma. Валидация Telegram
-                     initData, JWT-сессии, матчмейкинг, игровые комнаты-арбитры,
-                     серверные таймеры, рейтинг (Elo) и история матчей.
+apps/server          Node + Express + Socket.IO. Валидация Telegram initData,
+                     JWT-сессии, матчмейкинг, игровые комнаты-арбитры, серверные
+                     таймеры, рейтинг (Elo). Данные (игроки, матчи) хранятся в
+                     Directus, сервер ходит в него по HTTP.
 apps/web             Vite + React + react-three-fiber. Меню, профиль, матчмейкинг,
                      игровой экран (3D-доска + нижняя сетка + HUD с таймерами).
 ```
@@ -40,16 +41,16 @@ apps/web             Vite + React + react-three-fiber. Меню, профиль,
 2. Настроить окружение: скопировать `.env.example` → `.env` (в корне), задать
    значения. Для локальной игры без Telegram поставьте `DEV_AUTH=1` и
    `VITE_DEV_AUTH=1`.
-3. Поднять PostgreSQL и задать `DATABASE_URL` в `.env` (см. раздел про Dokploy
-   ниже), затем создать таблицы:
+3. Поднять Directus и задать `DIRECTUS_URL` + `DIRECTUS_TOKEN` в `.env`
+   (см. раздел про Directus ниже). Коллекции `players`/`matches` сервер создаст
+   сам при первом запуске. Для локали Directus можно поднять в Docker:
    ```bash
-   cd apps/server && npx prisma generate && npx prisma db push
-   ```
-   Для локали можно быстро поднять Postgres в Docker:
-   ```bash
-   docker run --name ttt3d-pg -e POSTGRES_PASSWORD=postgres \
-     -e POSTGRES_DB=tictactoe3d -p 5432:5432 -d postgres:18
-   # DATABASE_URL="postgresql://postgres:postgres@localhost:5432/tictactoe3d?schema=public"
+   docker run --name ttt3d-directus -p 8055:8055 \
+     -e KEY=dev-key -e SECRET=dev-secret \
+     -e ADMIN_EMAIL=admin@example.com -e ADMIN_PASSWORD=admin123 \
+     -e DB_CLIENT=sqlite3 -e DB_FILENAME=/directus/database/data.db \
+     -d directus/directus:latest
+   # затем в админке http://localhost:8055 создай статический токен и положи в DIRECTUS_TOKEN
    ```
 4. В двух терминалах:
    ```bash
@@ -74,29 +75,28 @@ npm test   # vitest в packages/game-core (проверяет ровно 76 ли
 2. Поднять `apps/server` и `apps/web` на публичном **HTTPS** (Telegram требует
    HTTPS). Локально для проверки можно использовать туннель (например `ngrok http
    5173`).
-3. В `.env` указать реальный `BOT_TOKEN`, `JWT_SECRET`, `DATABASE_URL`, `WEB_URL`
-   (публичный URL клиента) и выключить `DEV_AUTH`.
+3. В `.env` указать реальный `BOT_TOKEN`, `JWT_SECRET`, `DIRECTUS_URL`,
+   `DIRECTUS_TOKEN`, `WEB_URL` (публичный URL клиента) и выключить `DEV_AUTH`.
 4. В BotFather: `/newapp` → привязать Mini App к боту и указать URL веб-клиента.
 5. Открыть Mini App из бота — авторизация пройдёт автоматически через Telegram.
 
-## База данных: PostgreSQL через Dokploy
+## Данные: Directus + PostgreSQL
 
-Проект использует PostgreSQL (`provider = "postgresql"` в
-`apps/server/prisma/schema.prisma`).
+Хранилище данных — **Directus** (REST API + админка), который сам использует
+PostgreSQL как свою БД. Игровой сервер ходит в Directus по HTTP со статическим
+admin-токеном; коллекции `players` и `matches` создаются автоматически при старте.
 
-1. В Dokploy создать базу: **Database Name** = `tictactoe3d`, **User** = `postgres`,
-   пароль скопировать, образ `postgres:18`.
-2. Собрать `DATABASE_URL`:
-   `postgresql://postgres:<ПАРОЛЬ>@<ХОСТ>:5432/tictactoe3d?schema=public`
-   - **внутри Dokploy** (сервер рядом с БД): `<ХОСТ>` = App Name базы
-     (напр. `tictactoe3d-tictactoe3d`), порт `5432`;
-   - **снаружи** (миграции со своей машины): включить External-доступ у базы и взять
-     `IP:внешний_порт`, которые показывает Dokploy.
-3. Применить схему: `cd apps/server && npx prisma generate && npx prisma db push`.
-4. Просмотр данных: `npm run prisma:studio` (см. ниже).
+В Dokploy (4 объекта): **PostgreSQL** ← **Directus** ← **server** ← **web**.
 
-## Просмотр базы
+1. Создать PostgreSQL (Database Name = `directus`, образ `postgres:16/18`).
+2. Поднять **Directus** как приложение (образ `directus/directus:latest`), env:
+   `KEY`, `SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `DB_CLIENT=pg`,
+   `DB_HOST=<внутренний хост Postgres>`, `DB_PORT=5432`, `DB_DATABASE=directus`,
+   `DB_USER=postgres`, `DB_PASSWORD=<пароль>`, `PUBLIC_URL=https://api.твойдомен`.
+3. В админке Directus создать пользователя с ролью Administrator и **статический
+   токен** (User → Token), положить его в `DIRECTUS_TOKEN` сервера.
+4. Сервер: `DIRECTUS_URL=<внутренний хост Directus>:8055` (или публичный URL),
+   `DIRECTUS_TOKEN=<токен>`.
 
-```bash
-cd apps/server && npm run prisma:studio   # http://localhost:5555
-```
+Данные смотри прямо в **админке Directus** (`https://api.твойдомен`) — коллекции
+`players` и `matches`.
