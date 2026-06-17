@@ -6,7 +6,12 @@ import type {
 } from '@ttt3d/game-core';
 import { getInitData } from './tma.js';
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3001';
+// In the fullstack deployment the server hosts this very page, so default to the
+// same origin. Override with VITE_SERVER_URL only when the API lives elsewhere
+// (e.g. local dev where web runs on :5173 and the server on :3001).
+const SERVER_URL =
+  import.meta.env.VITE_SERVER_URL ||
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001');
 const DEV_AUTH = import.meta.env.VITE_DEV_AUTH === '1';
 
 export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;

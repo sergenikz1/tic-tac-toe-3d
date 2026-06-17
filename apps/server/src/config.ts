@@ -9,6 +9,8 @@ export const config = {
   directusUrl: (process.env.DIRECTUS_URL ?? 'http://localhost:8055').replace(/\/$/, ''),
   /** Static admin token used by the server to read/write Directus collections. */
   directusToken: process.env.DIRECTUS_TOKEN ?? '',
+  /** Override path to the built web client (defaults to apps/web/dist). */
+  webDist: process.env.WEB_DIST,
 };
 
 if (!config.botToken && !config.devAuth) {

@@ -12,11 +12,16 @@ packages/game-core   Общая логика: доска 4×4×4, генерац
                      определение победы, сетевой протокол. Покрыта тестами.
 apps/server          Node + Express + Socket.IO. Валидация Telegram initData,
                      JWT-сессии, матчмейкинг, игровые комнаты-арбитры, серверные
-                     таймеры, рейтинг (Elo). Данные (игроки, матчи) хранятся в
-                     Directus, сервер ходит в него по HTTP.
+                     таймеры, рейтинг (Elo). Данные (игроки, матчи) — в Directus.
+                     В продакшене ЭТОТ ЖЕ сервер раздаёт собранный фронтенд.
 apps/web             Vite + React + react-three-fiber. Меню, профиль, матчмейкинг,
                      игровой экран (3D-доска + нижняя сетка + HUD с таймерами).
 ```
+
+**Деплой — фуллстек:** один контейнер (`./Dockerfile`) собирает фронт и бэк, и
+Express отдаёт и API, и статику фронта с одного origin (как Next.js). Отдельно
+крутится **Directus** (данные + админка) на своём домене. Итого 3 объекта в
+Dokploy: **app (фуллстек)** + **Directus** + **PostgreSQL** (база для Directus).
 
 ## Правила (76 выигрышных линий)
 
@@ -52,16 +57,19 @@ apps/web             Vite + React + react-three-fiber. Меню, профиль,
      -d directus/directus:latest
    # затем в админке http://localhost:8055 создай статический токен и положи в DIRECTUS_TOKEN
    ```
-4. В двух терминалах:
+4. В двух терминалах (локально фронт и бэк раздельно — удобнее для HMR):
    ```bash
    npm run dev:server   # http://localhost:3001
    npm run dev:web      # http://localhost:5173
    ```
+   Для локалки выстави `VITE_SERVER_URL=http://localhost:3001` (фронт на :5173
+   ходит на сервер :3001). В продакшене эта переменная пустая — фронт берёт
+   тот же origin, что и страница.
 5. Открыть `http://localhost:5173` в двух вкладках (в dev-режиме каждый получает
    случайного игрока) → «Найти соперника» → играть.
 
-> Сервер читает переменные из `.env` в корне репозитория. Веб-клиент использует
-> переменные с префиксом `VITE_` (см. `.env.example`).
+> Сервер читает переменные из `.env` в корне репозитория. Переменные с префиксом
+> `VITE_` вшиваются во фронт при сборке (см. `.env.example`).
 
 ## Тесты
 
@@ -72,12 +80,12 @@ npm test   # vitest в packages/game-core (проверяет ровно 76 ли
 ## Деплой как Telegram Mini App
 
 1. Создать бота в [@BotFather](https://t.me/BotFather), получить `BOT_TOKEN`.
-2. Поднять `apps/server` и `apps/web` на публичном **HTTPS** (Telegram требует
-   HTTPS). Локально для проверки можно использовать туннель (например `ngrok http
-   5173`).
-3. В `.env` указать реальный `BOT_TOKEN`, `JWT_SECRET`, `DIRECTUS_URL`,
-   `DIRECTUS_TOKEN`, `WEB_URL` (публичный URL клиента) и выключить `DEV_AUTH`.
-4. В BotFather: `/newapp` → привязать Mini App к боту и указать URL веб-клиента.
+2. Задеплоить **фуллстек-приложение** (`./Dockerfile`) на публичном **HTTPS**
+   (Telegram требует HTTPS) — это и фронт, и API сразу. Отдельно — Directus.
+3. В переменных приложения указать `BOT_TOKEN`, `JWT_SECRET`, `DIRECTUS_URL`,
+   `DIRECTUS_TOKEN`, `WEB_URL` (= собственный публичный домен), `DEV_AUTH=0`;
+   build-arg `VITE_BOT_USERNAME` = имя бота. `VITE_SERVER_URL` оставить пустым.
+4. В BotFather: `/newapp` → привязать Mini App к боту и указать URL приложения.
 5. Открыть Mini App из бота — авторизация пройдёт автоматически через Telegram.
 
 ## Данные: Directus + PostgreSQL

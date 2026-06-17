@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'node:http';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import { existsSync } from 'node:fs';
 import { config } from './config.js';
 import { validateInitData, signSession } from './auth.js';
 import { upsertUser, getLeaderboard } from './db.js';
@@ -59,6 +62,22 @@ app.get('/leaderboard', async (_req, res) => {
     res.json([]);
   }
 });
+
+// --- Serve the built web client (fullstack: API + SPA from one origin) ---
+// WEB_DIST overrides the location; by default it's apps/web/dist relative to the
+// compiled server (apps/server/dist/index.js -> ../../web/dist).
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const webDist = config.webDist ?? path.resolve(__dirname, '../../web/dist');
+
+if (existsSync(webDist)) {
+  app.use(express.static(webDist));
+  // SPA fallback: anything not matched above returns index.html so the client
+  // router can take over. API routes and /socket.io are handled before this.
+  app.get('*', (_req, res) => res.sendFile(path.join(webDist, 'index.html')));
+  console.log(`[server] serving web client from ${webDist}`);
+} else {
+  console.log(`[server] web client not found at ${webDist} (API-only mode)`);
+}
 
 const httpServer = createServer(app);
 attachSocket(httpServer);
