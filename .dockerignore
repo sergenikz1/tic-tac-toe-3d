@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.gitignore
+*.md
+.env
+.env.*
+**/*.db
+**/*.db-journal
+coverage
+.DS_Store
+apps/web/dist
+packages/game-core/dist
