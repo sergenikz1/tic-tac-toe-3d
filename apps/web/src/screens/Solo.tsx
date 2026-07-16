@@ -164,14 +164,13 @@ function SoloCard({
   const secs = Math.ceil(remaining / 1000);
   const low = active && remaining <= 10_000;
   const pct = Math.max(0, Math.min(100, (remaining / TURN_MS) * 100));
+  const clock = `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}`;
   return (
     <div className={`player-card ${active ? 'active' : ''}`}>
       <div className="pc-top">
         <span className={`bead-chip bead-${color}`} />
         <span className="pc-name">{name}</span>
-        <span className={`pc-timer ${low ? 'low' : ''}`}>
-          0:{secs.toString().padStart(2, '0')}
-        </span>
+        <span className={`pc-timer ${low ? 'low' : ''}`}>{clock}</span>
       </div>
       <div className="timer-bar">
         <div

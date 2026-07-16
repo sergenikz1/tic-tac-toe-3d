@@ -4,8 +4,9 @@ import type { Group } from 'three';
 import type { Color } from '@ttt3d/game-core';
 
 /** Palette per player: fish body, fins/tail, eye. */
+// "Black" is lifted towards graphite so the fish stays readable on the dark bg.
 const FISH_COLORS: Record<Color, { body: string; fins: string; eye: string }> = {
-  black: { body: '#1b1b1f', fins: '#3a3a42', eye: '#f4f4f5' },
+  black: { body: '#2b2b34', fins: '#4d4d5a', eye: '#f4f4f5' },
   white: { body: '#f4f4f5', fins: '#c9c9d1', eye: '#1b1b1f' },
 };
 

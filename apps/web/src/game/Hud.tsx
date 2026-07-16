@@ -61,6 +61,7 @@ function PlayerCard({
   const secs = Math.ceil(remaining / 1000);
   const low = remaining <= 10_000;
   const pct = Math.max(0, Math.min(100, (remaining / TURN_MS) * 100));
+  const clock = `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}`;
   const name = player.user.firstName ?? player.user.username ?? 'Игрок';
 
   return (
@@ -71,9 +72,7 @@ function PlayerCard({
           {name}
           {isMe ? ' (вы)' : ''}
         </span>
-        <span className={`pc-timer ${low ? 'low' : ''}`}>
-          0:{secs.toString().padStart(2, '0')}
-        </span>
+        <span className={`pc-timer ${low ? 'low' : ''}`}>{clock}</span>
       </div>
       <div className="timer-bar">
         <div
