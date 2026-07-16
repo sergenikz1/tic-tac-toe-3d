@@ -11,7 +11,8 @@ export type Screen =
   | 'game'
   | 'profile'
   | 'rules'
-  | 'friend';
+  | 'friend'
+  | 'solo';
 
 interface AppState {
   screen: Screen;
@@ -87,7 +88,9 @@ export const useStore = create<AppState>((set, get) => ({
         get().joinPrivate(startCode);
       }
     } catch (err) {
-      set({ authError: (err as Error).message, screen: 'auth-error' });
+      // No server / no Telegram: still open the menu in offline mode so the
+      // solo game (and the Android build) works. Online buttons show the error.
+      set({ authError: (err as Error).message, screen: 'menu' });
     }
   },
 

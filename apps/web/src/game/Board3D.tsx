@@ -60,6 +60,7 @@ export function Board3D({ state, lastCell, canPlay, onPlay }: Board3DProps) {
         color={color}
         animate={i === lastCell}
         highlight={winning.has(i)}
+        seed={i}
       />,
     );
   }

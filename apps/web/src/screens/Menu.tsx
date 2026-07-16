@@ -2,8 +2,10 @@ import { useStore } from '../store.js';
 
 export function Menu() {
   const user = useStore((s) => s.user);
+  const authError = useStore((s) => s.authError);
   const joinQueue = useStore((s) => s.joinQueue);
   const navigate = useStore((s) => s.navigate);
+  const online = user !== null;
 
   return (
     <div className="screen menu">
@@ -28,14 +30,26 @@ export function Menu() {
         </div>
       )}
 
+      {!online && (
+        <div className="offline-banner">
+          <span>Оффлайн-режим: онлайн недоступен{authError ? ` (${authError})` : ''}</span>
+          <button className="btn-link" onClick={() => useStore.getState().init()}>
+            Повторить
+          </button>
+        </div>
+      )}
+
       <div className="menu-buttons">
-        <button className="btn btn-primary" onClick={joinQueue}>
+        <button className="btn btn-primary" onClick={() => navigate('solo')}>
+          🐟 Одиночная игра
+        </button>
+        <button className="btn" disabled={!online} onClick={joinQueue}>
           🎮 Найти соперника
         </button>
-        <button className="btn" onClick={() => navigate('friend')}>
+        <button className="btn" disabled={!online} onClick={() => navigate('friend')}>
           👥 Игра с другом
         </button>
-        <button className="btn" onClick={() => navigate('profile')}>
+        <button className="btn" disabled={!online} onClick={() => navigate('profile')}>
           👤 Профиль
         </button>
         <button className="btn" onClick={() => navigate('rules')}>

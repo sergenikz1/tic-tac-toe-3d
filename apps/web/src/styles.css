@@ -536,3 +536,26 @@ body {
   font-size: 14px;
   text-align: center;
 }
+
+/* ---------- Offline banner ---------- */
+.offline-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(234, 179, 8, 0.12);
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--yellow);
+}
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--tg-accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}

@@ -5,6 +5,7 @@ import { Matchmaking } from './screens/Matchmaking.js';
 import { Profile } from './screens/Profile.js';
 import { Rules } from './screens/Rules.js';
 import { Friend } from './screens/Friend.js';
+import { Solo } from './screens/Solo.js';
 import { Game } from './game/Game.js';
 
 export function App() {
@@ -43,6 +44,8 @@ export function App() {
       return <Rules />;
     case 'friend':
       return <Friend />;
+    case 'solo':
+      return <Solo />;
   }
 }
 
