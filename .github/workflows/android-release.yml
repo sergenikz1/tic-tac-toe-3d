@@ -1,0 +1,66 @@
+name: Android APK Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.1.0)'
+        required: true
+        default: 'v0.1.0'
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web (offline solo build)
+        run: |
+          npm run build:core
+          npm run build -w @ttt3d/web
+
+      - name: Sync Capacitor
+        working-directory: apps/web
+        run: npx cap sync android
+
+      - name: Build APK
+        working-directory: apps/web/android
+        run: gradle assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: cp apps/web/android/app/build/outputs/apk/debug/app-debug.apk ttt3d-fish.apk
+
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: 3D Tic-Tac-Toe (fish edition) ${{ github.event.inputs.tag || github.ref_name }}
+          body: |
+            Android-приложение «3D крестики-нолики» (Score Four 4×4×4).
+
+            - 🐟 Бусины — 3D-рыбки
+            - 🤖 Одиночная игра против бота (офлайн, сервер не нужен)
+            - ⏱ Таймер 1 минута на ход
+            - 🟢🔴🟡🔵 Цветные грани для ориентации при вращении
+
+            Установка: скачайте `ttt3d-fish.apk` на Android-устройство и откройте
+            (разрешите установку из неизвестных источников). APK подписан debug-ключом.
+          files: ttt3d-fish.apk
