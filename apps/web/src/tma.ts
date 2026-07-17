@@ -38,8 +38,9 @@ export function initTelegram() {
 
 function applyTheme(wa: TelegramWebApp) {
   const root = document.documentElement;
-  root.dataset.theme = wa.colorScheme;
-  const tp = wa.themeParams;
+  if (wa.colorScheme) root.dataset.theme = wa.colorScheme;
+  // themeParams is undefined outside a real Telegram client — guard every access.
+  const tp = wa.themeParams ?? {};
   if (tp.bg_color) root.style.setProperty('--tg-bg', tp.bg_color);
   if (tp.text_color) root.style.setProperty('--tg-text', tp.text_color);
   if (tp.button_color) root.style.setProperty('--tg-accent', tp.button_color);
