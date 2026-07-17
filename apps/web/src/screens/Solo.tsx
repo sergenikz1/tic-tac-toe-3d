@@ -27,7 +27,8 @@ interface Ended {
  */
 export function Solo() {
   const navigate = useStore((s) => s.navigate);
-  const [state, setState] = useState<GameState>(() => createGame('black'));
+  const soloSize = useStore((s) => s.soloSize);
+  const [state, setState] = useState<GameState>(() => createGame('black', soloSize));
   const [lastCell, setLastCell] = useState<number | null>(null);
   const [deadline, setDeadline] = useState<number>(() => Date.now() + TURN_MS);
   const [ended, setEnded] = useState<Ended | null>(null);
@@ -86,7 +87,7 @@ export function Solo() {
   }
 
   function restart() {
-    setState(createGame('black'));
+    setState(createGame('black', soloSize));
     setLastCell(null);
     setEnded(null);
     setDeadline(Date.now() + TURN_MS);

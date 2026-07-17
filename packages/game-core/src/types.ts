@@ -34,9 +34,11 @@ export interface Move {
  * Use `index(x, y, h)` to address cells.
  */
 export interface GameState {
-  /** Flat board of length 64. */
+  /** Board edge length N (cube N×N×N, win = N in a row). Online games use 4. */
+  size: number;
+  /** Flat board of length size³. */
   board: CellValue[];
-  /** Per-peg stack heights, length 16 (indexed by y*4 + x). */
+  /** Per-peg stack heights, length size² (indexed by y*size + x). */
   heights: number[];
   /** Whose turn it is. */
   turn: Color;

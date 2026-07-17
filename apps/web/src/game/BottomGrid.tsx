@@ -1,4 +1,4 @@
-import { EDGE_COLORS, GameState, pegIndex, SIZE, type Move } from '@ttt3d/game-core';
+import { EDGE_COLORS, GameState, pegIndex, type Move } from '@ttt3d/game-core';
 import { haptic } from '../tma.js';
 
 interface BottomGridProps {
@@ -8,20 +8,21 @@ interface BottomGridProps {
 }
 
 /**
- * Top-down 4x4 input grid. Rows map to peg-y (0 = north/green at top), columns
+ * Top-down N×N input grid. Rows map to peg-y (0 = north/green at top), columns
  * to peg-x (0 = west/blue at left), matching the orientation of the 3D model.
  * The border colors mirror the 3D edge markers.
  */
 export function BottomGrid({ state, canPlay, onPlay }: BottomGridProps) {
+  const n = state.size;
   const cells = [];
-  for (let y = 0; y < SIZE; y++) {
-    for (let x = 0; x < SIZE; x++) {
-      const peg = pegIndex(x, y);
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const peg = pegIndex(x, y, n);
       const height = state.heights[peg];
-      const full = height >= SIZE;
+      const full = height >= n;
       // Top bead color on this peg (the last placed), for a quick read.
       const topColor =
-        height > 0 ? state.board[(height - 1) * SIZE * SIZE + y * SIZE + x] : null;
+        height > 0 ? state.board[(height - 1) * n * n + y * n + x] : null;
       cells.push(
         <button
           key={peg}
@@ -32,16 +33,14 @@ export function BottomGrid({ state, canPlay, onPlay }: BottomGridProps) {
             onPlay({ x, y });
           }}
         >
-          <span className="cell-count">{height}/4</span>
+          <span className="cell-count">
+            {height}/{n}
+          </span>
           <span className="stack-dots">
-            {Array.from({ length: SIZE }).map((_, i) => {
+            {Array.from({ length: n }).map((_, i) => {
               const filled = i < height;
               const c =
-                filled && i === height - 1
-                  ? topColor
-                  : filled
-                    ? 'filled'
-                    : 'empty';
+                filled && i === height - 1 ? topColor : filled ? 'filled' : 'empty';
               return <i key={i} className={`dot dot-${c}`} />;
             })}
           </span>
@@ -56,7 +55,9 @@ export function BottomGrid({ state, canPlay, onPlay }: BottomGridProps) {
       <div className="edge edge-bottom" style={{ background: EDGE_COLORS.south }} />
       <div className="edge edge-left" style={{ background: EDGE_COLORS.west }} />
       <div className="edge edge-right" style={{ background: EDGE_COLORS.east }} />
-      <div className="grid">{cells}</div>
+      <div className="grid" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
+        {cells}
+      </div>
     </div>
   );
 }

@@ -9,6 +9,11 @@ describe('line generation', () => {
     expect(LINES).toHaveLength(76);
   });
 
+  it('matches ((N+2)³−N³)/2 for the other board sizes', () => {
+    expect(generateLines(3)).toHaveLength(49);
+    expect(generateLines(5)).toHaveLength(109);
+  });
+
   it('every line has 4 distinct in-bounds cells', () => {
     for (const line of LINES) {
       expect(line).toHaveLength(4);
@@ -33,7 +38,7 @@ describe('line generation', () => {
     let spaceDiag = 0; // E: full 3D diagonal
 
     for (const line of LINES) {
-      const cs = line.map(deindex);
+      const cs = line.map((c) => deindex(c));
       const dh = cs[3].h - cs[0].h;
       const dx = cs[3].x - cs[0].x;
       const dy = cs[3].y - cs[0].y;

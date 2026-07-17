@@ -1,18 +1,22 @@
 import { create } from 'zustand';
 import type { GameSnapshot, Move, PublicUser } from '@ttt3d/game-core';
-import { authenticate, connectSocket, GameSocket } from './api.js';
-import { haptic, getStartParam } from './tma.js';
+import type { GameSocket } from './api.js';
 
 export type Screen =
+  | 'menu'
+  | 'solo-select'
+  | 'solo'
+  | 'rules'
+  // Online screens are kept for the future multiplayer build; Telegram auth is
+  // currently disabled, so they are not reachable from the menu.
   | 'loading'
   | 'auth-error'
-  | 'menu'
   | 'matchmaking'
   | 'game'
   | 'profile'
-  | 'rules'
-  | 'friend'
-  | 'solo';
+  | 'friend';
+
+export type BoardSize = 3 | 4 | 5;
 
 interface AppState {
   screen: Screen;
@@ -25,9 +29,12 @@ interface AppState {
   inviteCode: string | null;
   privateError: string | null;
   privateJoining: boolean;
+  /** Board size for the next solo game (3 = easy, 4 = classic, 5 = hard). */
+  soloSize: BoardSize;
 
   init: () => Promise<void>;
   navigate: (screen: Screen) => void;
+  setSoloSize: (size: BoardSize) => void;
   joinQueue: () => void;
   leaveQueue: () => void;
   move: (move: Move) => void;
@@ -39,8 +46,13 @@ interface AppState {
   cancelPrivate: () => void;
 }
 
+/**
+ * Telegram auth is disabled for now: the app boots straight into the menu and
+ * only the offline solo mode is exposed. The online actions below are inert
+ * stubs so the multiplayer screens keep compiling until auth returns.
+ */
 export const useStore = create<AppState>((set, get) => ({
-  screen: 'loading',
+  screen: 'menu',
   user: null,
   authError: null,
   socket: null,
@@ -50,95 +62,32 @@ export const useStore = create<AppState>((set, get) => ({
   inviteCode: null,
   privateError: null,
   privateJoining: false,
+  soloSize: 4,
 
   async init() {
-    try {
-      const { token, user } = await authenticate();
-      const socket = connectSocket(token);
-
-      socket.on('queue:waiting', () => set({ searching: true }));
-      socket.on('match:found', (snapshot) => {
-        haptic('medium');
-        set({
-          snapshot,
-          searching: false,
-          screen: 'game',
-          rematchOfferBy: null,
-          inviteCode: null,
-          privateError: null,
-          privateJoining: false,
-        });
-      });
-      socket.on('game:update', (snapshot) => {
-        const prev = get().snapshot;
-        if (snapshot.lastMove && (!prev || prev.state.moveCount !== snapshot.state.moveCount)) {
-          haptic('light');
-        }
-        set({ snapshot, screen: 'game' });
-      });
-      socket.on('rematch:offered', (byUserId) => set({ rematchOfferBy: byUserId }));
-      socket.on('game:error', (message) => console.warn('[game:error]', message));
-
-      set({ user, socket, screen: 'menu', authError: null });
-
-      // If opened via an invite deep link, jump straight into that room.
-      const startCode = getStartParam();
-      if (startCode) {
-        set({ screen: 'friend' });
-        get().joinPrivate(startCode);
-      }
-    } catch (err) {
-      // No server / no Telegram: still open the menu in offline mode so the
-      // solo game (and the Android build) works. Online buttons show the error.
-      set({ authError: (err as Error).message, screen: 'menu' });
-    }
+    set({ screen: 'menu' });
   },
 
   navigate: (screen) => set({ screen }),
+  setSoloSize: (size) => set({ soloSize: size }),
 
-  joinQueue() {
-    get().socket?.emit('queue:join');
-    set({ searching: true, screen: 'matchmaking' });
-  },
-
+  joinQueue() {},
   leaveQueue() {
-    get().socket?.emit('queue:leave');
-    set({ searching: false, screen: 'menu' });
+    set({ screen: 'menu' });
   },
-
   move(move) {
     get().socket?.emit('game:move', move);
   },
-
   resign() {
     get().socket?.emit('game:resign');
   },
-
   rematch() {
     get().socket?.emit('game:rematch');
   },
-
-  refreshProfile() {
-    get().socket?.emit('profile:get', (user) => set({ user }));
-  },
-
-  createPrivate() {
-    set({ screen: 'friend', privateError: null, inviteCode: null });
-    get().socket?.emit('private:create', (code) => set({ inviteCode: code }));
-  },
-
-  joinPrivate(code) {
-    const clean = code.trim().toUpperCase();
-    if (!clean) return;
-    set({ privateJoining: true, privateError: null });
-    get().socket?.emit('private:join', clean, (res) => {
-      // On success, the 'match:found' handler switches to the game screen.
-      if (!res.ok) set({ privateError: res.error ?? 'Не удалось войти', privateJoining: false });
-    });
-  },
-
+  refreshProfile() {},
+  createPrivate() {},
+  joinPrivate() {},
   cancelPrivate() {
-    get().socket?.emit('private:cancel');
-    set({ inviteCode: null, privateError: null, privateJoining: false, screen: 'menu' });
+    set({ screen: 'menu' });
   },
 }));
